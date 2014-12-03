@@ -1,0 +1,14 @@
+{"frames": [
+	{
+		"name": "small-rock-1",
+		"frame": {"x":0,"y":0,"w":88,"h":93}
+	},
+	{
+		"name": "small-rock-2",
+		"frame": {"x":136,"y":0,"w":92,"h":92}
+	},
+	{
+		"name": "small-rock-3",
+		"frame": {"x":272,"y":0,"w":87,"h":92}
+	}
+]}

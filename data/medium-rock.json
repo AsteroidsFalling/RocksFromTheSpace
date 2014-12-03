@@ -1,0 +1,14 @@
+{"frames": [
+	{
+		"name": "medium-rock-1",
+		"frame": {"x":0,"y":0,"w":135,"h":131}
+	},
+	{
+		"name": "medium-rock-2",
+		"frame": {"x":136,"y":0,"w":135,"h":131}
+	},
+	{
+		"name": "medium-rock-3",
+		"frame": {"x":272,"y":0,"w":135,"h":131}
+	}
+]}

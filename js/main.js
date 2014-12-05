@@ -11,10 +11,12 @@ gameState.load.prototype = {
 		this.game.load.image('background', 'ressources/img/background.png');
 		this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
 		this.game.load.atlasJSONHash('fire', 'ressources/img/fire.png', 'data/fire.json');
+		this.game.load.atlasJSONHash('medium-rock', 'ressources/img/medium-rock.png', 'data/medium-rock.json');
 	},
 
 	create: function() {
-		game.state.start('main');
+		this.game.physics.startSystem(Phaser.Physics.ARCADE);
+		this.game.state.start('main');
 	}
 };
 
@@ -25,7 +27,9 @@ gameState.main.prototype = {
 	activeColumn: 3, //index of the column where the vessel is 1 to nbColumn
 	vesselSpeed: 15, //speed of the vessel when we move it
 	shootSpeed: 5, //speed of the fire
+	rockSpeed: 5, //speed of the fire
 	shoot: [], //array of shoot
+	rocks: [], //array of rocks
 	create: function() {
 		//we load the background
 		this.background = this.game.add.sprite(0,0,'background');
@@ -49,6 +53,8 @@ gameState.main.prototype = {
 	update: function() {
 		this.vesselAnimation();
 		this.shootAnimation();
+		this.rocksGeneration();
+		this.rockAnimation();
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -98,13 +104,58 @@ gameState.main.prototype = {
 
 	shootAnimation: function() {
 		for(var i = 0; i<this.shoot.length; i++) {
-			if(this.shoot[i].y > 500) this.shoot[i].y -= this.shootSpeed;
+			if(this.shoot[i].y > 300) this.shoot[i].y -= this.shootSpeed;
 			else { 
 				this.shoot[i].kill();
 				this.shoot.splice(i,1);
 			}
 		}
-	}
+	},
+
+	getRockPosX: function(rock) {
+		var singleWidthColumn = globalWidth  / this.nbColumn;
+		var widthColumn = parseInt(Math.random() * 10 % this.nbColumn + 1) * singleWidthColumn;
+		return (widthColumn - singleWidthColumn / 2)  - rock.width / 2;
+	},
+
+	rocksGeneration: function() {
+		var doWeGenerateARock = Math.random(); 
+		if(doWeGenerateARock>0.05) return;
+
+		var rock = this.game.add.sprite(0,0,'medium-rock');
+		rock.animations.add('medium-rock-1',[0,1]);
+		rock.x = this.getRockPosX(rock);
+		rock.y = - rock.height;
+		var nbTexture = parseInt(Math.random() * 10 % 3) + 1 ;
+		rock.animations.play('medium-rock-'+nbTexture);
+		this.rocks.push(rock);
+	},
+
+	rockAnimation: function() {
+		var toDelete = [];
+		for(var i = 0; i<this.rocks.length; i++) {
+			//if we two rock are overlaping we delete one
+			this.checkRockOverlap(this.rocks[i]);
+			if(this.rocks[i].y < globalHeight)  { 
+				this.rocks[i].y += this.rockSpeed;
+			} else {
+				this.rocks[i].kill();
+				this.rocks.splice(i,1);
+			}
+		}
+	},
+
+	checkRockOverlap: function(rock) {
+		for(var i = 0; i<this.rocks.length; i++) {
+			if(rock == this.rocks[i]) continue;
+			if(rock.overlap(this.rocks[i])) {
+				this.rocks[i].kill();
+				this.rocks.splice(i,1);
+				return true;	
+			} 
+		}
+		return false;
+	},
 };
 
 

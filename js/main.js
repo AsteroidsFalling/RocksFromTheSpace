@@ -83,7 +83,7 @@ gameState.main.prototype = {
 		shoot.x = (this.vessel.width / 2) + this.vessel.x;
 		shoot.y = this.vessel.y - this.vessel.height;
 		shoot.animations.add('fire');
-		shoot.animations.play('fire',15,true);
+		shoot.animations.play('fire',6,true);
 		this.shoot.push(shoot);
 	},
 
@@ -99,7 +99,10 @@ gameState.main.prototype = {
 	shootAnimation: function() {
 		for(var i = 0; i<this.shoot.length; i++) {
 			if(this.shoot[i].y > 500) this.shoot[i].y -= this.shootSpeed;
-			else this.shoot[i].kill();
+			else { 
+				this.shoot[i].kill();
+				this.shoot.splice(i,1);
+			}
 		}
 	}
 };

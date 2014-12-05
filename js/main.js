@@ -10,6 +10,7 @@ gameState.load.prototype = {
 	preload: function() {
 		this.game.load.image('background', 'ressources/img/background.png');
 		this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
+		this.game.load.atlasJSONHash('fire', 'ressources/img/fire.png', 'data/fire.json');
 	},
 
 	create: function() {
@@ -22,7 +23,9 @@ gameState.main = function() {};
 gameState.main.prototype = {
 	nbColumn: 5, //nb of total column where the rocks fall
 	activeColumn: 3, //index of the column where the vessel is 1 to nbColumn
-	vesselSpeed: 10, //speed of the vessel when we move it
+	vesselSpeed: 15, //speed of the vessel when we move it
+	shootSpeed: 5, //speed of the fire
+	shoot: [], //array of shoot
 	create: function() {
 		//we load the background
 		this.background = this.game.add.sprite(0,0,'background');
@@ -30,10 +33,12 @@ gameState.main.prototype = {
 		//we set the key -> to go right <- to go left space to shoot
 		keyLeft = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 		keyRight = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+		keySpace = this.game.input.keyboard.addKey(Phaser.Keyboard.X);
 		keyLeft.onDown.add(this.vesselMove,this);
 		keyRight.onDown.add(this.vesselMove,this);
+		keySpace.onDown.add(this.vesselShoot,this);
 
-		//we load the vessel ressources left and right movement animation and we place it on the screen
+		//we load the vessel ressources left and right movement animation and we place it on the screen=
 		this.vessel = this.game.add.sprite(0,0,'vessel');
 		this.vessel.animations.add('going-right',[0,1]);
 		this.vessel.animations.add('going-left',[0,2]);
@@ -43,6 +48,7 @@ gameState.main.prototype = {
 
 	update: function() {
 		this.vesselAnimation();
+		this.shootAnimation();
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -70,12 +76,30 @@ gameState.main.prototype = {
 		}
 	},
 
+	vesselShoot: function() {
+		//SHOT
+		//we load the shoot
+		var shoot = this.game.add.sprite(0,0,'fire');
+		shoot.x = (this.vessel.width / 2) + this.vessel.x;
+		shoot.y = this.vessel.y - this.vessel.height;
+		shoot.animations.add('fire');
+		shoot.animations.play('fire',15,true);
+		this.shoot.push(shoot);
+	},
+
 	//we animate the vessel movement
 	vesselAnimation: function() {
 		if(this.vessel.x + this.vesselSpeed < this.getVesselPosx()) this.vessel.x += this.vesselSpeed;
 		else if(this.vessel.x - this.vesselSpeed > this.getVesselPosx()) this.vessel.x -= this.vesselSpeed;
 		else {
 			this.vessel.frame = 0;
+		}
+	},
+
+	shootAnimation: function() {
+		for(var i = 0; i<this.shoot.length; i++) {
+			if(this.shoot[i].y > 500) this.shoot[i].y -= this.shootSpeed;
+			else this.shoot[i].kill();
 		}
 	}
 };

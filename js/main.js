@@ -60,8 +60,8 @@ gameState.main.prototype = {
 		this.rockAnimation();
 		game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
 
-		this.destroyShootSprite();
 		this.destroyRocksSprite();
+		this.destroyShootSprite();
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -165,7 +165,8 @@ gameState.main.prototype = {
 		for(var i = 0; i<this.rocks.length; i++) {
 			if(rock == this.rocks[i]) continue;
 			if(rock.overlap(this.rocks[i])) {
-				this.rocksToRemove.push(this.rocks[i]);
+				this.rocks[i].kill();
+				this.rocks.splice(i,1);
 				return true;
 			}
 		}

@@ -2,7 +2,7 @@ var globalWidth = 1029; //width of the background
 var globalHeight = 821; //height of the background
 var gameState = {};
 
-//Function called before the game is loaded 
+//Function called before the game is loaded
 //Load the ressources
 gameState.load = function() {};
 gameState.load.prototype = {
@@ -29,7 +29,10 @@ gameState.main.prototype = {
 	shootSpeed: 5, //speed of the fire
 	rockSpeed: 5, //speed of the fire
 	shoot: [], //array of shoot
+	shootToRemove: [],
 	rocks: [], //array of rocks
+	rocksToRemove: [],
+
 	create: function() {
 		//we load the background
 		this.background = this.game.add.sprite(0,0,'background');
@@ -55,6 +58,10 @@ gameState.main.prototype = {
 		this.shootAnimation();
 		this.rocksGeneration();
 		this.rockAnimation();
+		game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
+
+		this.destroyShootSprite();
+		this.destroyRocksSprite();
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -73,7 +80,7 @@ gameState.main.prototype = {
 				this.vessel.animations.play('going-right');
 			}
 		}
-		//LEFT MOVEMENT 
+		//LEFT MOVEMENT
 		if(game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
 			if(this.activeColumn>1) {
 				this.activeColumn--;
@@ -86,10 +93,15 @@ gameState.main.prototype = {
 		//SHOT
 		//we load the shoot
 		var shoot = this.game.add.sprite(0,0,'fire');
+
 		shoot.x = (this.vessel.width / 2) + this.vessel.x;
 		shoot.y = this.vessel.y - this.vessel.height;
+
 		shoot.animations.add('fire');
 		shoot.animations.play('fire',6,true);
+
+		game.physics.enable(shoot, Phaser.Physics.ARCADE);
+
 		this.shoot.push(shoot);
 	},
 
@@ -105,9 +117,8 @@ gameState.main.prototype = {
 	shootAnimation: function() {
 		for(var i = 0; i<this.shoot.length; i++) {
 			if(this.shoot[i].y > 300) this.shoot[i].y -= this.shootSpeed;
-			else { 
-				this.shoot[i].kill();
-				this.shoot.splice(i,1);
+			else {
+				this.shootToRemove.push(this.shoot[i]);
 			}
 		}
 	},
@@ -119,28 +130,33 @@ gameState.main.prototype = {
 	},
 
 	rocksGeneration: function() {
-		var doWeGenerateARock = Math.random(); 
+		var doWeGenerateARock = Math.random();
 		if(doWeGenerateARock>0.05) return;
 
 		var rock = this.game.add.sprite(0,0,'medium-rock');
+
 		rock.animations.add('medium-rock-1',[0,1]);
+
 		rock.x = this.getRockPosX(rock);
 		rock.y = - rock.height;
+
 		var nbTexture = parseInt(Math.random() * 10 % 3) + 1 ;
 		rock.animations.play('medium-rock-'+nbTexture);
+
+		game.physics.enable(rock, Phaser.Physics.ARCADE);
+
+
 		this.rocks.push(rock);
 	},
 
 	rockAnimation: function() {
-		var toDelete = [];
 		for(var i = 0; i<this.rocks.length; i++) {
 			//if we two rock are overlaping we delete one
 			this.checkRockOverlap(this.rocks[i]);
-			if(this.rocks[i].y < globalHeight)  { 
+			if(this.rocks[i].y < globalHeight)  {
 				this.rocks[i].y += this.rockSpeed;
 			} else {
-				this.rocks[i].kill();
-				this.rocks.splice(i,1);
+				this.rocksToRemove.push(this.rocks[i]);
 			}
 		}
 	},
@@ -149,13 +165,43 @@ gameState.main.prototype = {
 		for(var i = 0; i<this.rocks.length; i++) {
 			if(rock == this.rocks[i]) continue;
 			if(rock.overlap(this.rocks[i])) {
-				this.rocks[i].kill();
-				this.rocks.splice(i,1);
-				return true;	
-			} 
+				this.rocksToRemove.push(this.rocks[i]);
+				return true;
+			}
 		}
 		return false;
 	},
+
+	rockHit: function(rock, shot) {
+		this.rocksToRemove.push(rock);
+		this.shootToRemove.push(shot);
+	},
+
+	destroyShootSprite: function() {
+		var indexOfShot = -1;
+		for(var i=0; i<this.shootToRemove.length; i++) {
+			indexOfShot = this.shoot.indexOf(this.shootToRemove[i]);
+
+			if(indexOfShot != -1) {
+				this.shoot[indexOfShot].kill();
+				this.shoot.splice(indexOfShot,1);
+			}
+		}
+		this.shootToRemove = [];
+	},
+
+	destroyRocksSprite: function() {
+		var indexOfRock = -1;
+		for(var i=0; i<this.rocksToRemove.length; i++) {
+			indexOfRock = this.rocks.indexOf(this.rocksToRemove[i]);
+
+			if(indexOfRock != -1) {
+				this.rocks[indexOfRock].kill();
+				this.rocks.splice(indexOfRock,1);
+			}
+		}
+		this.rocksToRemove = [];
+	}
 };
 
 

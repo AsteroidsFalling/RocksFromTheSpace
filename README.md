@@ -3,7 +3,7 @@ RocksFromTheSpace
 
 #Dependence :
 * [Framework HTML5 PHASER](http://phaser.io/)
-* Server Apache
+* Apache Server
 
 #Installation :
 
@@ -21,4 +21,4 @@ The fleet of GEOFFREY YASSIR and captains must do everything to save Terra meteo
 #How to play :
 
 * Move : by press 'RIGHT' and 'LEFT'
-* Tir : with the 'X' key
+* Shoot : with the 'X' key

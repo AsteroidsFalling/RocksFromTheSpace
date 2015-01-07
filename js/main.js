@@ -9,6 +9,7 @@ gameState.load.prototype = {
 	//we load ressources for the game
 	preload: function() {
 		this.game.load.image('background', 'ressources/img/background.png');
+        this.game.load.image('ice-cube', 'ressources/img/ice-cube.png');
 		this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
 		this.game.load.atlasJSONHash('fire', 'ressources/img/fire.png', 'data/fire.json');
 		this.game.load.atlasJSONHash('medium-rock', 'ressources/img/medium-rock.png', 'data/medium-rock.json');
@@ -28,12 +29,15 @@ gameState.main.prototype = {
 	vesselSpeed: 15, //speed of the vessel when we move it
 	shootSpeed: 5, //speed of the fire
 	rockSpeed: 5, //speed of the fire
+    initialRockSpeed: 5,
 	shoot: [], //array of shoot
 	shootToRemove: [],
 	rocks: [], //array of rocks
 	rocksToRemove: [],
+    bonus: undefined,
 
 	create: function() {
+
 		//we load the background
 		this.background = this.game.add.sprite(0,0,'background');
 
@@ -58,7 +62,10 @@ gameState.main.prototype = {
 		this.shootAnimation();
 		this.rocksGeneration();
 		this.rockAnimation();
+        this.bonusGeneration();
+        this.bonusAnimation();
 		game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
+        game.physics.arcade.overlap(this.bonus, this.shoot, this.bonusHit, null, this);
 
 		this.destroyRocksSprite();
 		this.destroyShootSprite();
@@ -202,7 +209,49 @@ gameState.main.prototype = {
 			}
 		}
 		this.rocksToRemove = [];
-	}
+	},
+
+    slowRocks: function(){
+        this.initialRockSpeed = this.rockSpeed;
+        this.rockSpeed = 2;
+        game.time.events.add(Phaser.Timer.SECOND * 5, this.stopSlow, this);
+    },
+
+    stopSlow: function(){
+        this.rockSpeed = this.initialRockSpeed;
+    },
+
+    bonusGeneration: function(){
+        var doWeGenerateABonus = Math.random();
+        if(doWeGenerateABonus>0.05 || this.bonus !== undefined) return;
+
+        var bonus = this.game.add.sprite(0,0,'ice-cube');
+
+        bonus.x = this.getRockPosX(bonus);
+        bonus.y = - bonus.height;
+
+        game.physics.enable(bonus, Phaser.Physics.ARCADE);
+
+        this.bonus = bonus;
+    },
+
+    bonusAnimation: function() {
+        if(this.bonus === undefined) return;
+        //if we two objects are overlaping we delete one
+        if(this.bonus.y < globalHeight)  {
+            this.bonus.y += this.rockSpeed;
+        } else {
+            this.bonus = undefined;
+        }
+
+    },
+
+    bonusHit: function(bonus, shoot){
+        this.bonus.kill();
+        this.shootToRemove.push(shoot);
+        shoot.kill();
+        this.slowRocks();
+    }
 };
 
 

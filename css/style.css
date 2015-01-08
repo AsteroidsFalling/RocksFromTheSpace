@@ -1,3 +1,5 @@
+@import url(http://fonts.googleapis.com/css?family=Audiowide);
+
 body {
 	background: url('../ressources/img/background.jpg');
 	animation: space 15s linear infinite;
@@ -15,6 +17,19 @@ canvas {
 	-webkit-border-image: url(../ressources/img/border.png) 59 85 77 80 stretch;
 	-o-border-image: url(../ressources/img/border.png) 59 85 77 80 stretch;
 	border-image: url(../ressources/img/border.png) 59 85 77 80 fill stretch;
+}
+
+#score, #col {
+	position: absolute;
+
+	color: white;
+	font-family: 'Audiowide', cursive;
+	font-size: large;
+	top: 10%;
+}
+
+#col {
+	top: 15%;
 }
 
 .rocket {

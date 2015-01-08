@@ -19,13 +19,51 @@ gameState.load.prototype = {
 
 	create: function() {
 		this.game.physics.startSystem(Phaser.Physics.ARCADE);
-		this.game.state.start('main');
+		this.game.state.start('menu');
+	}
+};
+
+gameState.menu = function(){};
+
+gameState.menu.prototype = {
+	score: 0,
+
+	create: function() {
+		//show the space tile, repeated
+		this.background = this.game.add.tileSprite(0, 0, globalWidth, globalHeight, 'background');
+
+		//start game text
+		var texts = ["Rocks what is your Job ?!!! AOU ! AOU ! AOU !",
+			"Rocks ! YOU SHALL NOT PASS !",
+			"My name is grock !",
+			"My name’s Rock. James Rock ",
+			"To infinty…and beyond (and rocks)!",
+			"You talkin’ to me , rocks?",
+		];
+		var selectedText = Math.floor(Math.random() * (texts.length - 1));
+		var text = texts[selectedText] + "\n Tap to begin";
+		var style = { font: "30px Arial", fill: "#fff", align: "center" };
+		var t = this.game.add.text(globalWidth/2, globalHeight/2, text, style);
+		t.anchor.set(0.5);
+
+		//highest score
+		text = "Highest score: "+this.score*50;
+		style = { font: "15px Arial", fill: "#fff", align: "center" };
+
+		var h = this.game.add.text(globalWidth/2, globalHeight/2 + 50, text, style);
+		h.anchor.set(0.5);
+	},
+	update: function() {
+		if(this.game.input.activePointer.justPressed()) {
+			this.game.state.start('main');
+		}
 	}
 };
 
 //HeartGame
 gameState.main = function() {};
 gameState.main.prototype = {
+	keys: {},
 	nbColumn: 5, //nb of total column where the rocks fall
 	activeColumn: 3, //index of the column where the vessel is 1 to nbColumn
 	vesselSpeed: 15, //speed of the vessel when we move it
@@ -37,41 +75,70 @@ gameState.main.prototype = {
 	rocks: [], //array of rocks
 	rocksToRemove: [],
     bonus: undefined,
+	score: 0,
+	scaleRock: 1,
 
 	create: function() {
+		this.resetVar();
 
 		//we load the background
 		this.background = this.game.add.sprite(0,0,'background');
 
 		//we set the key -> to go right <- to go left space to shoot
-		keyLeft = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
-		keyRight = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
-		keySpace = this.game.input.keyboard.addKey(Phaser.Keyboard.X);
-		keyLeft.onDown.add(this.vesselMove,this);
-		keyRight.onDown.add(this.vesselMove,this);
-		keySpace.onDown.add(this.vesselShoot,this);
+		this.keys.keyLeft = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+		this.keys.keyRight = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+		this.keys.keySpace = this.game.input.keyboard.addKey(Phaser.Keyboard.X);
+		this.keys.keyLeft.onDown.add(this.vesselMove,this);
+		this.keys.keyRight.onDown.add(this.vesselMove,this);
+		this.keys.keySpace.onDown.add(this.vesselShoot,this);
 
 		//we load the vessel ressources left and right movement animation and we place it on the screen=
 		this.vessel = this.game.add.sprite(0,0,'vessel');
-        this.vessel.anchor.setTo(0.5,0.5);
 		this.vessel.animations.add('going-right',[0,1]);
 		this.vessel.animations.add('going-left',[0,2]);
+		this.vessel.anchor.setTo(0.5,0.5);
 		this.vessel.y = 700;
 		this.vessel.x = this.getVesselPosx();
+		game.physics.enable(this.vessel, Phaser.Physics.ARCADE);
+
 	},
 
 	update: function() {
 		this.vesselAnimation();
 		this.shootAnimation();
+
 		this.rocksGeneration();
 		this.rockAnimation();
-        this.bonusGeneration();
+
+		this.bonusGeneration();
         this.bonusAnimation();
+
+		game.physics.arcade.overlap(this.vessel, this.rocks, this.destroyedVessel, null, this);
+		game.physics.arcade.overlap(this.bonus, this.rocks, this.bonusOverlap, null, this);
 		game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
-        game.physics.arcade.overlap(this.bonus, this.shoot, this.bonusHit, null, this);
+		game.physics.arcade.overlap(this.bonus, this.shoot, this.bonusHit, null, this);
+
 
 		this.destroyRocksSprite();
 		this.destroyShootSprite();
+
+		this.handleScore();
+	},
+	
+	resetVar: function() {
+		this.keys = {} ;
+		this.nbColumn = 5 ;
+		this.activeColumn = 3 ;
+		this.vesselSpeed = 15 ;
+		this.shootSpeed = 5 ;
+		this.rockSpeed = 5 ;
+		this.initialRockSpeed = 5 ;
+		this.shoot = [] ;
+		this.shootToRemove = [] ;
+		this.rocks = [] ;
+		this.rocksToRemove = [] ;
+		this.bonus = undefined ;
+		this.score = 0 ;
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -108,7 +175,7 @@ gameState.main.prototype = {
 		shoot.y = this.vessel.y - this.vessel.height;
 
 		shoot.animations.add('fire');
-		shoot.animations.play('fire',6,true);
+		shoot.animations.play('fire', 10 , true);
 
 		game.physics.enable(shoot, Phaser.Physics.ARCADE);
 
@@ -149,7 +216,9 @@ gameState.main.prototype = {
 		rock.animations.add('medium-rock-1',[0,1]);
 
 		rock.x = this.getRockPosX(rock);
-		rock.y = - rock.height;
+		rock.y = - rock.height * 2;
+		rock.scale.x = this.scaleRock;
+		rock.scale.y = this.scaleRock;
 
 		var nbTexture = parseInt(Math.random() * 10 % 3) + 1 ;
 		rock.animations.play('medium-rock-'+nbTexture);
@@ -162,13 +231,12 @@ gameState.main.prototype = {
 
 	rockAnimation: function() {
 		for(var i = 0; i<this.rocks.length; i++) {
-			//if we two rock are overlaping we delete one
 			this.checkRockOverlap(this.rocks[i]);
 			if(this.rocks[i].y < globalHeight)  {
                 this.rocks[i].rotation += 0.02;
 				this.rocks[i].y += this.rockSpeed;
 			} else {
-				this.rocksToRemove.push(this.rocks[i]);
+				this.setGameOver();
 			}
 		}
 	},
@@ -186,6 +254,7 @@ gameState.main.prototype = {
 	},
 
 	rockHit: function(rock, shot) {
+		this.score++;
 		this.rocksToRemove.push(rock);
 		this.shootToRemove.push(shot);
 	},
@@ -241,11 +310,12 @@ gameState.main.prototype = {
         }else{
             bonus = this.game.add.sprite(0,0,'dynamite-rock');
             bonus.anchor.setTo(0.5,0.5);
-            bonus.function = 'this.explodeRocks()';
+            bonus.function = 'this.explodeRocks(false,true)';
         }
 
         bonus.x = this.getRockPosX(bonus);
-        bonus.y = - bonus.height;
+        bonus.y = - 2 * bonus.height;
+
 
         game.physics.enable(bonus, Phaser.Physics.ARCADE);
 
@@ -257,7 +327,7 @@ gameState.main.prototype = {
 
         if(this.bonus.y - this.bonus.height < globalHeight)  {
             this.bonus.y += this.rockSpeed;
-            this.bonus.rotation += 0.02;
+            this.bonus.rotation += 0.05;
         } else {
             this.bonus = undefined;
         }
@@ -271,10 +341,17 @@ gameState.main.prototype = {
         eval(bonus.function);
     },
 
-    explodeRocks: function(){
+    explodeRocks: function(deleteShot, addScore){
         for(var i=0; i<this.rocks.length; i++) {
+			if(addScore) this.score++;
             this.rocksToRemove.push(this.rocks[i]);
         }
+
+		if(!deleteShot) return;
+
+		for(var i=0; i<this.shoot.length; i++) {
+			this.shootToRemove.push(this.shoot[i]);
+		}
     },
 
     explosionAnimation: function(element) {
@@ -284,11 +361,41 @@ gameState.main.prototype = {
         kaboom.anchor.setTo(0.5,0.5);
         kaboom.animations.add('kaboom');
         kaboom.play('kaboom', 30, false, true);
-    }
+    },
+
+	destroyedVessel: function(vessel, rock) {
+		this.setGameOver();
+	},
+
+	setGameOver: function() {
+		this.vessel.kill();
+		this.explosionAnimation(this.vessel);
+		this.explodeRocks(true, false);
+		game.time.events.add(Phaser.Timer.SECOND * 5, this.displayGameOver(), this);
+	},
+
+	displayGameOver: function() {
+		game.state.states['menu'].score = this.score;
+		game.state.start('menu');
+	},
+
+	handleScore: function() {
+		this.nbColumn = Math.round(this.score/20) + 5;
+		this.scaleRock = 5 /  this.nbColumn;
+		document.getElementById('score').innerText = "Score : " + this.score * 50;
+		document.getElementById('col').innerText = "Lvl : " + this.nbColumn;
+	},
+
+	bonusOverlap: function(bonus, rock) {
+		var i = this.rocks.indexOf(rock);
+		this.rocks[i].kill();
+		this.rocks.splice(i,1);
+	}
 };
 
 
 var game = new Phaser.Game(globalWidth, globalHeight, Phaser.AUTO, 'rfts');
 game.state.add('load', gameState.load);
+game.state.add('menu', gameState.menu);
 game.state.add('main', gameState.main);
 game.state.start('load');

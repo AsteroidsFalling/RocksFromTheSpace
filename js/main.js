@@ -10,7 +10,9 @@ gameState.load.prototype = {
 	preload: function() {
 		this.game.load.image('background', 'ressources/img/background.png');
         this.game.load.image('ice-cube', 'ressources/img/ice-cube.png');
-		this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
+        this.game.load.image('dynamite-rock', 'ressources/img/dynamite-rock.png');
+        this.game.load.spritesheet('kaboom', 'ressources/img/explode.png', 128, 128);
+        this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
 		this.game.load.atlasJSONHash('fire', 'ressources/img/fire.png', 'data/fire.json');
 		this.game.load.atlasJSONHash('medium-rock', 'ressources/img/medium-rock.png', 'data/medium-rock.json');
 	},
@@ -51,6 +53,7 @@ gameState.main.prototype = {
 
 		//we load the vessel ressources left and right movement animation and we place it on the screen=
 		this.vessel = this.game.add.sprite(0,0,'vessel');
+        this.vessel.anchor.setTo(0.5,0.5);
 		this.vessel.animations.add('going-right',[0,1]);
 		this.vessel.animations.add('going-left',[0,2]);
 		this.vessel.y = 700;
@@ -75,7 +78,7 @@ gameState.main.prototype = {
 	getVesselPosx: function() {
 		var singleWidthColumn = globalWidth  / this.nbColumn;
 		var widthColumn = this.activeColumn * singleWidthColumn;
-		return (widthColumn - singleWidthColumn / 2)  - this.vessel.width / 2;
+		return (widthColumn - singleWidthColumn / 2);
 	},
 
 	//we handle the movement of the vessel here
@@ -100,8 +103,8 @@ gameState.main.prototype = {
 		//SHOT
 		//we load the shoot
 		var shoot = this.game.add.sprite(0,0,'fire');
-
-		shoot.x = (this.vessel.width / 2) + this.vessel.x;
+        shoot.anchor.setTo(0.5,0.5);
+		shoot.x =  this.vessel.x;
 		shoot.y = this.vessel.y - this.vessel.height;
 
 		shoot.animations.add('fire');
@@ -133,7 +136,7 @@ gameState.main.prototype = {
 	getRockPosX: function(rock) {
 		var singleWidthColumn = globalWidth  / this.nbColumn;
 		var widthColumn = parseInt(Math.random() * 10 % this.nbColumn + 1) * singleWidthColumn;
-		return (widthColumn - singleWidthColumn / 2)  - rock.width / 2;
+		return (widthColumn - singleWidthColumn / 2);
 	},
 
 	rocksGeneration: function() {
@@ -141,6 +144,7 @@ gameState.main.prototype = {
 		if(doWeGenerateARock>0.05) return;
 
 		var rock = this.game.add.sprite(0,0,'medium-rock');
+        rock.anchor.setTo(0.5,0.5);
 
 		rock.animations.add('medium-rock-1',[0,1]);
 
@@ -161,6 +165,7 @@ gameState.main.prototype = {
 			//if we two rock are overlaping we delete one
 			this.checkRockOverlap(this.rocks[i]);
 			if(this.rocks[i].y < globalHeight)  {
+                this.rocks[i].rotation += 0.02;
 				this.rocks[i].y += this.rockSpeed;
 			} else {
 				this.rocksToRemove.push(this.rocks[i]);
@@ -200,11 +205,13 @@ gameState.main.prototype = {
 
 	destroyRocksSprite: function() {
 		var indexOfRock = -1;
+
 		for(var i=0; i<this.rocksToRemove.length; i++) {
 			indexOfRock = this.rocks.indexOf(this.rocksToRemove[i]);
 
 			if(indexOfRock != -1) {
-				this.rocks[indexOfRock].kill();
+                this.rocks[indexOfRock].kill();
+                this.explosionAnimation(this.rocks[indexOfRock]);
 				this.rocks.splice(indexOfRock,1);
 			}
 		}
@@ -222,10 +229,20 @@ gameState.main.prototype = {
     },
 
     bonusGeneration: function(){
+        var bonus;
         var doWeGenerateABonus = Math.random();
-        if(doWeGenerateABonus>0.05 || this.bonus !== undefined) return;
+        if(doWeGenerateABonus>0.5 || this.bonus !== undefined) return;
 
-        var bonus = this.game.add.sprite(0,0,'ice-cube');
+        var randomBonus = Math.random();
+        if(randomBonus>0.5){
+            bonus = this.game.add.sprite(0,0,'ice-cube');
+            bonus.anchor.setTo(0.5,0.5);
+            bonus.function = 'this.slowRocks()';
+        }else{
+            bonus = this.game.add.sprite(0,0,'dynamite-rock');
+            bonus.anchor.setTo(0.5,0.5);
+            bonus.function = 'this.explodeRocks()';
+        }
 
         bonus.x = this.getRockPosX(bonus);
         bonus.y = - bonus.height;
@@ -237,20 +254,36 @@ gameState.main.prototype = {
 
     bonusAnimation: function() {
         if(this.bonus === undefined) return;
-        //if we two objects are overlaping we delete one
-        if(this.bonus.y < globalHeight)  {
+
+        if(this.bonus.y - this.bonus.height < globalHeight)  {
             this.bonus.y += this.rockSpeed;
+            this.bonus.rotation += 0.02;
         } else {
             this.bonus = undefined;
         }
-
     },
 
     bonusHit: function(bonus, shoot){
         this.bonus.kill();
         this.shootToRemove.push(shoot);
+        this.explosionAnimation(bonus);
         shoot.kill();
-        this.slowRocks();
+        eval(bonus.function);
+    },
+
+    explodeRocks: function(){
+        for(var i=0; i<this.rocks.length; i++) {
+            this.rocksToRemove.push(this.rocks[i]);
+        }
+    },
+
+    explosionAnimation: function(element) {
+        var kaboom = this.game.add.sprite(element.x,element.y,'kaboom');
+        kaboom.scale.x = 1.7;
+        kaboom.scale.y = 1.7;
+        kaboom.anchor.setTo(0.5,0.5);
+        kaboom.animations.add('kaboom');
+        kaboom.play('kaboom', 30, false, true);
     }
 };
 

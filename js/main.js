@@ -30,7 +30,7 @@ gameState.load.prototype = {
 gameState.menu = function(){};
 
 gameState.menu.prototype = {
-	score: undefined,
+	score: 0,
 
 	create: function() {
 		//show the space tile, repeated
@@ -45,19 +45,20 @@ gameState.menu.prototype = {
 			"You talkin’ to me , rocks?",
 		];
 		var selectedText = Math.floor(Math.random() * (texts.length - 1));
-        var gameOverText = (this.score != undefined) ? 'The earth was destroy ! Your fault Captain' : '';
+        var gameOverText = (this.score != 0) ? 'The earth was destroy ! Your fault Captain' : '';
 		var text = gameOverText  + "\n\n " + texts[selectedText] + "\n Tap to begin";
 		var style = { font: "30px Arial", fill: "#fff", align: "center" };
 		var t = this.game.add.text(globalWidth/2, globalHeight/2, text, style);
 		t.anchor.set(0.5);
 
 		//highest score
-        this.score = 0;
-		text = "Highest score: "+this.score*50;
-		style = { font: "15px Arial", fill: "#fff", align: "center" };
+        if(this.score !== 0) {
+            text = "Highest score: " + this.score * 50;
+            style = {font: "15px Arial", fill: "#fff", align: "center"};
 
-		var h = this.game.add.text(globalWidth/2, globalHeight/2 + 100, text, style);
-		h.anchor.set(0.5);
+            var h = this.game.add.text(globalWidth / 2, globalHeight / 2 + 100, text, style);
+            h.anchor.set(0.5);
+        }
 	},
 	update: function() {
 		if(this.game.input.activePointer.justPressed()) {

@@ -10,11 +10,15 @@ gameState.load.prototype = {
 	preload: function() {
 		this.game.load.image('background', 'ressources/img/background.png');
         this.game.load.image('ice-cube', 'ressources/img/ice-cube.png');
+        this.game.load.image('radioactive-rock', 'ressources/img/radioactive-rock.png');
         this.game.load.image('dynamite-rock', 'ressources/img/dynamite-rock.png');
         this.game.load.spritesheet('kaboom', 'ressources/img/explode.png', 128, 128);
         this.game.load.atlasJSONHash('vessel', 'ressources/img/vessel.png', 'data/vessel.json');
 		this.game.load.atlasJSONHash('fire', 'ressources/img/fire.png', 'data/fire.json');
 		this.game.load.atlasJSONHash('medium-rock', 'ressources/img/medium-rock.png', 'data/medium-rock.json');
+
+        this.game.load.audio('background-music', 'ressources/audio/background-music.ogg');
+
 	},
 
 	create: function() {
@@ -26,7 +30,7 @@ gameState.load.prototype = {
 gameState.menu = function(){};
 
 gameState.menu.prototype = {
-	score: 0,
+	score: undefined,
 
 	create: function() {
 		//show the space tile, repeated
@@ -41,16 +45,18 @@ gameState.menu.prototype = {
 			"You talkin’ to me , rocks?",
 		];
 		var selectedText = Math.floor(Math.random() * (texts.length - 1));
-		var text = texts[selectedText] + "\n Tap to begin";
+        var gameOverText = (this.score != undefined) ? 'The earth was destroy ! Your fault Captain' : '';
+		var text = gameOverText  + "\n\n " + texts[selectedText] + "\n Tap to begin";
 		var style = { font: "30px Arial", fill: "#fff", align: "center" };
 		var t = this.game.add.text(globalWidth/2, globalHeight/2, text, style);
 		t.anchor.set(0.5);
 
 		//highest score
+        this.score = 0;
 		text = "Highest score: "+this.score*50;
 		style = { font: "15px Arial", fill: "#fff", align: "center" };
 
-		var h = this.game.add.text(globalWidth/2, globalHeight/2 + 50, text, style);
+		var h = this.game.add.text(globalWidth/2, globalHeight/2 + 100, text, style);
 		h.anchor.set(0.5);
 	},
 	update: function() {
@@ -77,6 +83,8 @@ gameState.main.prototype = {
     bonus: undefined,
 	score: 0,
 	scaleRock: 1,
+    malus: undefined,
+    invert: false,
 
 	create: function() {
 		this.resetVar();
@@ -101,6 +109,8 @@ gameState.main.prototype = {
 		this.vessel.x = this.getVesselPosx();
 		game.physics.enable(this.vessel, Phaser.Physics.ARCADE);
 
+        var music = game.add.audio('background-music');
+        music.play();
 	},
 
 	update: function() {
@@ -113,10 +123,10 @@ gameState.main.prototype = {
 		this.bonusGeneration();
         this.bonusAnimation();
 
-		game.physics.arcade.overlap(this.vessel, this.rocks, this.destroyedVessel, null, this);
-		game.physics.arcade.overlap(this.bonus, this.rocks, this.bonusOverlap, null, this);
-		game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
-		game.physics.arcade.overlap(this.bonus, this.shoot, this.bonusHit, null, this);
+        this.malusGeneration();
+        this.malusAnimation();
+
+		this.handleCollision();
 
 
 		this.destroyRocksSprite();
@@ -139,6 +149,9 @@ gameState.main.prototype = {
 		this.rocksToRemove = [] ;
 		this.bonus = undefined ;
 		this.score = 0 ;
+        this.scaleRock = 1;
+        this.malus = undefined;
+        this.invert = false;
 	},
 
 	//we get the x coordinate if the active column, where we should place the vessel
@@ -150,15 +163,17 @@ gameState.main.prototype = {
 
 	//we handle the movement of the vessel here
 	vesselMove: function() {
+        var right = (this.invert)? Phaser.Keyboard.LEFT : Phaser.Keyboard.RIGHT;
+        var left = (this.invert)? Phaser.Keyboard.RIGHT : Phaser.Keyboard.LEFT;
 		//RIGHT MOVEMENT
-		if(game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)) {
+		if(game.input.keyboard.isDown(right)) {
 			if(this.activeColumn<this.nbColumn) {
 				this.activeColumn++;
 				this.vessel.animations.play('going-right');
 			}
 		}
 		//LEFT MOVEMENT
-		if(game.input.keyboard.isDown(Phaser.Keyboard.LEFT)) {
+		if(game.input.keyboard.isDown(left)) {
 			if(this.activeColumn>1) {
 				this.activeColumn--;
 				this.vessel.animations.play('going-left');
@@ -329,12 +344,13 @@ gameState.main.prototype = {
             this.bonus.y += this.rockSpeed;
             this.bonus.rotation += 0.05;
         } else {
+            this.bonus.kill();
             this.bonus = undefined;
         }
     },
 
     bonusHit: function(bonus, shoot){
-        this.bonus.kill();
+        bonus.kill();
         this.shootToRemove.push(shoot);
         this.explosionAnimation(bonus);
         shoot.kill();
@@ -371,7 +387,7 @@ gameState.main.prototype = {
 		this.vessel.kill();
 		this.explosionAnimation(this.vessel);
 		this.explodeRocks(true, false);
-		game.time.events.add(Phaser.Timer.SECOND * 5, this.displayGameOver(), this);
+		game.time.events.add(800, this.displayGameOver, this);
 	},
 
 	displayGameOver: function() {
@@ -382,15 +398,97 @@ gameState.main.prototype = {
 	handleScore: function() {
 		this.nbColumn = Math.round(this.score/20) + 5;
 		this.scaleRock = 5 /  this.nbColumn;
-		document.getElementById('score').innerText = "Score : " + this.score * 50;
-		document.getElementById('col').innerText = "Lvl : " + this.nbColumn;
+		document.getElementById('score').innerHTML = "Score : " + this.score * 50;
+		document.getElementById('col').innerHTML = "Lvl : " + this.nbColumn;
 	},
 
 	bonusOverlap: function(bonus, rock) {
 		var i = this.rocks.indexOf(rock);
 		this.rocks[i].kill();
 		this.rocks.splice(i,1);
-	}
+	},
+
+    malusGeneration: function() {
+        var malus;
+        var doWeGenerateAMalus = Math.random();
+        if(doWeGenerateAMalus>0.5 || this.malus !== undefined) return;
+
+        malus = this.game.add.sprite(0,0,'radioactive-rock');
+        malus.anchor.setTo(0.5,0.5);
+        malus.function = 'this.swapKey()';
+
+        malus.x = this.getRockPosX(malus);
+        malus.y = - 2 * malus.height;
+
+
+        game.physics.enable(malus, Phaser.Physics.ARCADE);
+
+        this.malus = malus;
+    },
+
+    malusAnimation: function() {
+        if(this.malus === undefined) return;
+
+        if(this.malus.y - this.malus.height < globalHeight)  {
+            this.malus.y += this.rockSpeed;
+            this.malus.rotation += 0.04;
+        } else {
+            this.malus.kill();
+            this.malus = undefined;
+        }
+    },
+
+    malusHit: function(malus, shoot){
+        malus.kill();
+        this.shootToRemove.push(shoot);
+        this.explosionAnimation(malus);
+        shoot.kill();
+        eval(malus.function);
+    },
+
+    swapKey: function() {
+        this.invert = true;
+        this.vessel.initialTint = this.vessel.tint;
+        this.vessel.tint = 0x00ff00;
+        game.time.events.add(800, this.stopSwap, this);
+    },
+
+    stopSwap: function() {
+        this.vessel.tint = this.vessel.initialTint;
+        this.invert = false;
+    },
+
+    malusOverlap: function(malus, rock) {
+        var i = this.rocks.indexOf(rock);
+        this.rocks[i].kill();
+        this.rocks.splice(i,1);
+    },
+
+    malusBonusOverlap: function(bonus, malus) {
+        malus.kill();
+        this.malus = undefined;
+    },
+
+    handleCollision: function() {
+        game.physics.arcade.overlap(this.vessel, this.rocks, this.destroyedVessel, null, this);
+        game.physics.arcade.overlap(this.rocks, this.shoot, this.rockHit, null, this);
+
+        if(this.bonus != undefined) {
+            game.physics.arcade.overlap(this.bonus, this.rocks, this.bonusOverlap, null, this);
+            game.physics.arcade.overlap(this.bonus, this.shoot, this.bonusHit, null, this);
+        }
+
+        if(this.malus != undefined) {
+            game.physics.arcade.overlap(this.malus, this.rocks, this.malusOverlap, null, this);
+            game.physics.arcade.overlap(this.malus, this.shoot, this.malusHit, null, this);
+        }
+
+        if(this.bonus != undefined && this.malus != undefined) {
+            game.physics.arcade.overlap(this.bonus, this.malus, this.malusBonusOverlap, null, this);
+        }
+    }
+
+
 };
 
 

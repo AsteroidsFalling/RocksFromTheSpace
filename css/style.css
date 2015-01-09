@@ -44,7 +44,20 @@ canvas {
 	-webkit-animation: rocket 10s infinite;
 	-moz-animation: rocket 10s infinite;
 	-o-animation: rocket 10s infinite;
+}
 
+.alien {
+    position: absolute;
+    top: 25%;
+    right: -20%;
+    height: 292px;
+    width: 322px;
+    background: url('../ressources/img/alien.png');
+    transform: rotate(-90deg);
+    animation: alien 20s ease infinite;
+    -webkit-animation: alien 20s ease infinite;
+    -moz-animation: alien 20s ease infinite;
+    -o-animation: alien 20s ease infinite;
 }
 
 @keyframes rocket {
@@ -61,6 +74,22 @@ canvas {
 
 @-o-keyframes rocket {
 	to {top: -20%; left: 100%;}
+}
+
+@keyframes alien {
+    50% {right: -100px;}
+}
+
+@-webkit-keyframes alien {
+    50% {right: -100px;}
+}
+
+@-moz-keyframes alien {
+    50% {right: -100px;}
+}
+
+@-o-keyframes alien {
+    50% {right: -100px;}
 }
 
 @keyframes space

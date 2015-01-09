@@ -22,3 +22,9 @@ The fleet of GEOFFREY YASSIR and captains must do everything to save Terra meteo
 
 * Move : by press 'RIGHT' and 'LEFT'
 * Shoot : with the 'X' key
+
+##Bonus / Malus : 
+
+* Splosion Rock : Explode all rocks on the screen 
+* Ice Rock : Slows the fall of rocks
+* Radioactive Rock : Inverse keys

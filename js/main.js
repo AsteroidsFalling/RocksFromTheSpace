@@ -19,6 +19,9 @@ gameState.load.prototype = {
 
         this.game.load.audio('background-music', 'ressources/audio/background-music.ogg');
 
+		var music = game.add.audio('background-music');
+		music.play();
+
 	},
 
 	create: function() {
@@ -109,9 +112,6 @@ gameState.main.prototype = {
 		this.vessel.y = 700;
 		this.vessel.x = this.getVesselPosx();
 		game.physics.enable(this.vessel, Phaser.Physics.ARCADE);
-
-        var music = game.add.audio('background-music');
-        music.play();
 	},
 
 	update: function() {

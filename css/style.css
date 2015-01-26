@@ -17,6 +17,8 @@ canvas {
 	-webkit-border-image: url(../ressources/img/border.png) 59 85 77 80 stretch;
 	-o-border-image: url(../ressources/img/border.png) 59 85 77 80 stretch;
 	border-image: url(../ressources/img/border.png) 59 85 77 80 fill stretch;
+	transform: scale(0.75); /*we reduce the size of the windows for lower resolution*/
+	transform-origin: center top;
 }
 
 #score, #col {
@@ -25,11 +27,11 @@ canvas {
 	color: white;
 	font-family: 'Audiowide', cursive;
 	font-size: large;
-	top: 10%;
+	top: 200px;
 }
 
 #col {
-	top: 15%;
+	top: 250px;
 }
 
 .rocket {
@@ -48,8 +50,8 @@ canvas {
 
 .alien {
     position: absolute;
-    top: 25%;
-    right: -20%;
+    top: 200%;
+    right: -200px;
     height: 292px;
     width: 322px;
     background: url('../ressources/img/alien.png');
